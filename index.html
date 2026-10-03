@@ -22,7 +22,8 @@ input,select{padding:11px;border:1px solid #ddd;border-radius:9px;width:100%;mar
 table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px solid #eee;text-align:left}
 .hidden{display:none}.total{font-size:22px;font-weight:800}
 .badge{display:inline-block;background:#e8f4ee;color:#176b45;padding:5px 8px;border-radius:99px;font-size:12px}
-.modal.hidden{display:none}.modal{position:fixed;inset:0;background:#0008;display:flex;align-items:center;justify-content:center;padding:20px}.modal>div{background:#fff;border-radius:15px;padding:20px;width:min(500px,100%)}
+.modal{position:fixed;inset:0;background:#0008;display:flex;align-items:center;justify-content:center;padding:20px}.modal>div{background:#fff;border-radius:15px;padding:20px;width:min(500px,100%)}
+#modal{display:none!important}
 </style>
 </head>
 <body>
@@ -66,11 +67,6 @@ table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px so
 <section id="history" class="hidden"><div class="panel"><h2>Riwayat Transaksi</h2><div id="historyList"></div></div></section>
 </div>
 
-<div id="modal" class="modal hidden"><div>
-<h2>📷 Scan Barcode</h2><p class="muted">Fitur kamera membutuhkan izin kamera dari browser.</p>
-<video id="video" autoplay playsinline style="width:100%;border-radius:10px;background:#111"></video>
-<button onclick="closeScanner()">Tutup</button>
-</div></div>
 
 <script>
 const defaultProducts=[
