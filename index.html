@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Toko Kelontong</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f5f7fb;color:#182230}
+header{background:#146c43;color:white;padding:16px;position:sticky;top:0;z-index:5}
+.wrap{max-width:1100px;margin:auto}.brand{font-size:22px;font-weight:700}.sub{opacity:.85;font-size:13px;margin-top:3px}
+nav{display:flex;gap:8px;overflow:auto;margin-top:14px}nav button{border:0;border-radius:10px;padding:10px 14px;background:#fff;color:#146c43;font-weight:700;white-space:nowrap}
+main{padding:18px 12px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+.card,.panel{background:white;border-radius:16px;padding:14px;box-shadow:0 2px 10px #0000000b}
+.card img{width:100%;height:140px;object-fit:cover;border-radius:12px;background:#eef2f5}.price{font-size:18px;font-weight:700;margin:8px 0}.muted{color:#687386;font-size:13px}
+button.primary{background:#146c43;color:#fff;border:0;border-radius:10px;padding:11px 14px;font-weight:700}
+button.danger{background:#fee2e2;color:#991b1b;border:0;border-radius:10px;padding:9px}
+input,select{width:100%;padding:11px;border:1px solid #d7dce3;border-radius:10px;margin:5px 0 10px;font-size:15px}
+.row{display:flex;gap:8px;align-items:center}.row>*{flex:1}.categorybar{display:flex;gap:8px;overflow:auto;padding-top:10px}.categorybar button{border:1px solid #d7dce3;background:#fff;color:#344054;border-radius:999px;padding:8px 14px;white-space:nowrap}.categorybar button.active{background:#146c43;color:#fff;border-color:#146c43}.actions{display:flex;gap:7px;margin-top:10px}.actions button{flex:1}
+.hidden{display:none!important}.total{font-size:22px;font-weight:800}.cartrow{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;border-bottom:1px solid #eee;padding:10px 0}
+#scanner{position:fixed;inset:0;background:#000e;z-index:20;display:flex;align-items:center;justify-content:center;padding:18px}
+.scanbox{width:min(500px,100%);background:#fff;border-radius:18px;padding:14px}.scanview{position:relative;background:#111;border-radius:14px;overflow:hidden}.scanview video{width:100%;display:block}.line{position:absolute;left:8%;right:8%;top:50%;height:2px;background:#ff3b30;box-shadow:0 0 8px #ff3b30}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#182230;color:#fff;padding:11px 16px;border-radius:12px;display:none;z-index:30}
+@media(max-width:600px){.grid{grid-template-columns:repeat(2,1fr)}.card{padding:10px}.card img{height:110px}}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<div class="brand" id="storeName">Toko Kelontong</div><div class="sub" id="storeInfo">Aplikasi kasir & stok sederhana</div>
+<nav>
+<button onclick="show('products')">Produk</button><button onclick="show('cart')">Keranjang</button>
+<button onclick="show('manage')">Kelola</button><button onclick="show('history')">Riwayat</button>
+</nav></div></header>
+
+<main class="wrap">
+<section id="products">
+<div style="margin:4px 0 12px"><h2 style="margin:0">Daftar Produk</h2><div class="muted">Pilih kategori untuk melihat produk</div></div>
+<div class="panel">
+<div class="row"><input id="search" placeholder="Cari nama atau barcode..." oninput="renderProducts()"><button class="primary" onclick="openScanner('search')">📷 Scan</button></div>
+<div id="categoryBar" class="categorybar"></div>
+</div><br><div id="productGrid" class="grid"></div>
+</section>
+
+<section id="cart" class="hidden">
+<div class="panel"><h2>Keranjang</h2><div id="cartList"></div>
+<div class="row"><div>Total</div><div class="total" id="cartTotal">Rp0</div></div>
+<label>Uang dibayar</label><input id="paid" type="number" placeholder="Contoh: 50000" oninput="renderCart()">
+<div class="row"><div>Kembalian</div><div class="total" id="change">Rp0</div></div>
+<button class="primary" style="width:100%;margin-top:10px" onclick="checkout()">Selesaikan Transaksi</button>
+</div></section>
+
+<section id="manage" class="hidden">
+<div class="panel"><h2>Tambah / Edit Produk</h2><p class="muted">Kategori yang tersedia: <b id="categoryText"></b></p>
+<input type="hidden" id="editId"><label>Nama produk</label><input id="pname" placeholder="Contoh: Beras 5 kg">
+<label>Kategori</label><div class="row"><select id="pcat"></select><button class="primary" onclick="addCategory()">+ Kategori</button></div>
+<label>Harga</label><input id="pprice" type="number" placeholder="Contoh: 75000">
+<label>Stok (boleh kosong)</label><input id="pstock" type="number" placeholder="Kosongkan jika tidak ingin mencatat stok">
+<label>Barcode</label><div class="row"><input id="pbarcode" placeholder="Ketik atau scan barcode"><button class="primary" onclick="openScanner('pbarcode')">📷 Scan</button></div>
+<label>Foto produk</label><input id="pimage" type="file" accept="image/*">
+<div class="actions"><button class="primary" onclick="saveProduct()">Simpan Produk</button><button class="danger" onclick="resetForm()">Batal</button></div>
+</div><br><div class="panel"><h2>Daftar Produk</h2><div id="manageList"></div></div>
+</section>
+
+<section id="history" class="hidden"><div class="panel"><h2>Riwayat Transaksi</h2><div id="historyList"></div></div></section>
+</main>
+
+<div id="scanner" class="hidden">
+<div class="scanbox"><h3>Scan Barcode</h3><div class="scanview"><video id="video" playsinline></video><div class="line"></div></div>
+<p class="muted">Arahkan barcode ke garis merah. Kamera membutuhkan izin browser dan website HTTPS/localhost.</p>
+<button class="primary" style="width:100%" onclick="closeScanner()">Tutup</button></div>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+const KEY='kelontong_web_v1';
+let selectedCategory='Semua';
+let db=JSON.parse(localStorage.getItem(KEY)||'null')||{
+store:{name:'Toko Kelontong',info:'Aplikasi kasir & stok sederhana'},
+cats:['Sembako','Minuman','Makanan','Lainnya'],products:[
+{id:1,name:'Beras 5 kg',cat:'Sembako',price:75000,stock:'',barcode:'899999999001',image:''},
+{id:2,name:'Minyak Goreng 1 L',cat:'Sembako',price:18000,stock:'',barcode:'899999999002',image:''},
+{id:3,name:'Gula 1 kg',cat:'Sembako',price:17000,stock:'',barcode:'899999999003',image:''}],cart:[],history:[]
+};
+function save(){localStorage.setItem(KEY,JSON.stringify(db))}
+function rupiah(n){return new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n||0)}
+function show(id){['products','cart','manage','history'].forEach(x=>document.getElementById(x).classList.toggle('hidden',x!==id)); if(id==='products')renderProducts();if(id==='cart')renderCart();if(id==='manage')renderManage();if(id==='history')renderHistory()}
+function renderProducts(){
+ let q=(document.getElementById('search').value||'').toLowerCase();
+ renderCategories();
+ let a=db.products.filter(p=>(p.name+' '+p.barcode).toLowerCase().includes(q) && (selectedCategory==='Semua'||p.cat===selectedCategory));
+ document.getElementById('productGrid').innerHTML=a.map(p=>`<div class="card">${p.image?`<img src="${p.image}">`:`<div style="height:140px;border-radius:12px;background:#eef2f5;display:grid;place-items:center;font-size:42px">🛒</div>`}<b>${p.name}</b><div class="muted">${p.cat}${p.stock!==''?' • Stok '+p.stock:''}</div><div class="price">${rupiah(p.price)}</div><div class="actions"><button class="primary" onclick="addCart(${p.id})">+ Keranjang</button><button onclick="editProduct(${p.id})">Edit</button></div></div>`).join('')||'<div class="panel">Produk tidak ditemukan.</div>';
+}
+function renderCategories(){
+ let cats=['Semua',...db.cats.filter(c=>c!=='Semua')];
+ document.getElementById('categoryBar').innerHTML=cats.map(c=>`<button class="${c===selectedCategory?'active':''}" onclick="selectCategory('${c.replace(/'/g,"\\'")}')">${c}</button>`).join('');
+}
+function selectCategory(c){selectedCategory=c;renderProducts()}
+function renderManage(){
+ document.getElementById('pcat').innerHTML=db.cats.map(c=>`<option>${c}</option>`).join(''); document.getElementById('categoryText').textContent=db.cats.join(' • ');
+ document.getElementById('manageList').innerHTML=db.products.map(p=>`<div class="cartrow"><div><b>${p.name}</b><div class="muted">${p.cat} • ${rupiah(p.price)}${p.barcode?' • '+p.barcode:''}</div></div><button onclick="editProduct(${p.id})">Edit</button><button class="danger" onclick="delProduct(${p.id})">Hapus</button></div>`).join('');
+}
+function resetForm(){['editId','pname','pprice','pstock','pbarcode'].forEach(id=>document.getElementById(id).value='');document.getElementById('pimage').value=''}
+function addCategory(){let c=prompt('Nama kategori baru:');if(c&&c.trim()){db.cats.push(c.trim());save();renderManage();toast('Kategori ditambahkan')}}
+function saveProduct(){
+ let name=pname.value.trim(),price=Number(pprice.value),cat=pcat.value;
+ if(!name||!price)return toast('Nama dan harga wajib diisi');
+ let file=pimage.files[0], old=db.products.find(x=>x.id==editId.value);
+ const done=(img)=>{let obj={id:old?old.id:Date.now(),name,cat,price,stock:pstock.value,barcode:pbarcode.value.trim(),image:img||(old?old.image:'')};if(old)db.products=db.products.map(x=>x.id==old.id?obj:x);else db.products.push(obj);save();resetForm();renderManage();renderProducts();toast('Produk tersimpan')};
+ if(file){let r=new FileReader();r.onload=()=>done(r.result);r.readAsDataURL(file)}else done('');
+}
+function editProduct(id){let p=db.products.find(x=>x.id===id);show('manage');editId.value=p.id;pname.value=p.name;pcat.value=p.cat;pprice.value=p.price;pstock.value=p.stock;pbarcode.value=p.barcode}
+function delProduct(id){if(confirm('Hapus produk ini?')){db.products=db.products.filter(p=>p.id!==id);save();renderManage();renderProducts()}}
+function addCart(id){let p=db.products.find(x=>x.id===id),x=db.cart.find(x=>x.id===id);if(x)x.qty++;else db.cart.push({id,qty:1});save();renderCart();toast(p.name+' masuk keranjang')}
+function renderCart(){
+ let total=0;
+ document.getElementById('cartList').innerHTML=db.cart.map(x=>{let p=db.products.find(z=>z.id===x.id);if(!p)return '';let sub=p.price*x.qty;total+=sub;return `<div class="cartrow"><div><b>${p.name}</b><div>${rupiah(p.price)} × ${x.qty}</div></div><div><button onclick="qty(${x.id},-1)">−</button> ${x.qty} <button onclick="qty(${x.id},1)">+</button></div><button class="danger" onclick="removeCart(${x.id})">×</button></div>`}).join('')||'<p class="muted">Keranjang masih kosong.</p>';
+cartTotal.textContent=rupiah(total);let paid=Number(document.getElementById('paid').value||0);change.textContent=rupiah(Math.max(0,paid-total))
+}
+function qty(id,n){let x=db.cart.find(z=>z.id===id);if(!x)return;x.qty+=n;if(x.qty<=0)db.cart=db.cart.filter(z=>z.id!==id);save();renderCart()}
+function removeCart(id){db.cart=db.cart.filter(x=>x.id!==id);save();renderCart()}
+function checkout(){if(!db.cart.length)return toast('Keranjang masih kosong');let total=db.cart.reduce((s,x)=>s+db.products.find(p=>p.id===x.id).price*x.qty,0),paid=Number(document.getElementById('paid').value||0);if(paid<total)return toast('Uang dibayar masih kurang');db.history.unshift({date:new Date().toLocaleString('id-ID'),items:db.cart.map(x=>({id:x.id,qty:x.qty})),total,paid,change:paid-total});db.cart=[];document.getElementById('paid').value='';save();renderCart();renderHistory();toast('Transaksi berhasil');}
+function renderHistory(){historyList.innerHTML=db.history.map((h,i)=>`<div class="card" style="margin-bottom:10px"><b>${h.date}</b><div class="muted">${h.items.map(x=>{let p=db.products.find(z=>z.id===x.id);return p?p.name+' × '+x.qty:''}).join(', ')}</div><div>Total ${rupiah(h.total)} • Bayar ${rupiah(h.paid)} • Kembali ${rupiah(h.change)}</div></div>`).join('')||'<p class="muted">Belum ada transaksi.</p>'}
+let stream=null,target=null;
+async function openScanner(t){target=t;document.getElementById('scanner').classList.remove('hidden');try{
+ if(!('BarcodeDetector' in window))throw new Error('Browser belum mendukung BarcodeDetector');
+ stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}});video.srcObject=stream;await video.play();scanLoop();
+}catch(e){toast('Kamera belum bisa dibuka. Pastikan website HTTPS dan izin kamera aktif.');}}
+async function scanLoop(){if(document.getElementById('scanner').classList.contains('hidden'))return;
+ try{let det=new BarcodeDetector();let codes=await det.detect(video);if(codes.length){let val=codes[0].rawValue;document.getElementById(target).value=val;closeScanner();if(target==='search')renderProducts();return}}catch(e){}requestAnimationFrame(scanLoop)}
+function closeScanner(){document.getElementById('scanner').classList.add('hidden');if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}}
+function toast(s){let t=document.getElementById('toast');t.textContent=s;t.style.display='block';setTimeout(()=>t.style.display='none',2200)}
+storeName.textContent=db.store.name;storeInfo.textContent=db.store.info;renderProducts();
+</script>
+</body></html>
